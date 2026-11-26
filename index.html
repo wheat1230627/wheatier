@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>APEX // 3D Racing</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;600;700;800&display=swap');
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10151a;color:#fff;font-family:Inter,Arial,sans-serif}
+#game{position:fixed;inset:0}canvas{display:block}
+#vignette{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,8,14,.35),transparent 25%,transparent 65%,rgba(3,8,14,.48)),radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.32))}
+.hud{position:fixed;inset:0;pointer-events:none}.topbar{position:absolute;top:22px;left:26px;right:26px;display:flex;justify-content:space-between;align-items:flex-start}
+.brand{font:900 27px 'Barlow Condensed',sans-serif;letter-spacing:3px;text-shadow:0 2px 14px #000}.brand span{color:#ff542f}.sub{font-size:9px;letter-spacing:3px;color:#c6d1d8;margin-top:2px}
+.pill{background:rgba(8,15,22,.62);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(12px);padding:10px 15px;border-radius:7px;font-size:11px;letter-spacing:1.5px;color:#dce6ec}
+.stats{position:absolute;left:28px;bottom:28px;display:flex;gap:10px;align-items:flex-end}.speedbox{width:160px;padding:12px 16px;background:rgba(8,15,22,.72);border:1px solid rgba(255,255,255,.18);border-radius:9px;backdrop-filter:blur(12px)}
+.speed{font:900 65px/.85 'Barlow Condensed',sans-serif;letter-spacing:-2px}.unit{font-size:10px;letter-spacing:2px;color:#aab8c2;margin-top:8px}.smallstat{min-width:95px;padding:12px 14px;background:rgba(8,15,22,.65);border:1px solid rgba(255,255,255,.14);border-radius:8px}.smallstat b{display:block;font:700 24px 'Barlow Condensed',sans-serif}.smallstat span{font-size:9px;letter-spacing:1.5px;color:#9eabb5}
+.rightstats{position:absolute;right:28px;bottom:30px;text-align:right}.gear{font:900 48px/.9 'Barlow Condensed',sans-serif}.gear small{font:600 10px Inter;color:#aab8c2;letter-spacing:2px}.nitro{width:190px;height:7px;border-radius:8px;background:rgba(255,255,255,.2);margin-top:10px;overflow:hidden}.nitro i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#08c8ff,#d6fbff);box-shadow:0 0 14px #08c8ff}
+.controls{position:absolute;bottom:25px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.75);background:rgba(8,15,22,.5);padding:9px 14px;border-radius:6px;white-space:nowrap}
+#overlay{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(135deg,rgba(5,12,19,.88),rgba(5,12,19,.35));z-index:5}
+.panel{width:min(520px,calc(100vw - 34px));padding:38px 40px 34px;background:rgba(10,19,27,.84);border:1px solid rgba(255,255,255,.18);border-radius:14px;box-shadow:0 25px 100px #0009;backdrop-filter:blur(18px)}
+.eyebrow{font-size:10px;letter-spacing:4px;color:#ff6546;font-weight:800}.panel h1{font:900 clamp(48px,9vw,76px)/.86 'Barlow Condensed',sans-serif;letter-spacing:1px;margin:14px 0}.panel h1 span{color:#ff5938}.panel p{color:#b8c5cd;font-size:13px;line-height:1.7;margin:18px 0 24px}
+button{border:0;background:#ff5737;color:white;padding:15px 27px;border-radius:5px;font:800 13px Inter;letter-spacing:2px;cursor:pointer;box-shadow:0 7px 25px #ff573744}button:hover{background:#ff7459;transform:translateY(-1px)}
+.note{font-size:10px;color:#82919b;margin-top:18px;letter-spacing:.5px}
+#toast{position:absolute;top:88px;left:50%;transform:translateX(-50%);color:#fff;background:#101a22c9;border:1px solid #ffffff30;padding:9px 16px;border-radius:5px;font-size:11px;opacity:0;transition:opacity .2s}
+@media(max-width:650px){.topbar{top:14px;left:14px;right:14px}.brand{font-size:22px}.stats{left:12px;bottom:16px;gap:6px}.speedbox{width:115px;padding:9px}.speed{font-size:51px}.smallstat{min-width:66px;padding:9px}.smallstat b{font-size:19px}.rightstats{right:13px;bottom:18px}.gear{font-size:38px}.nitro{width:120px}.controls{bottom:100px;font-size:9px}.pill{padding:8px;font-size:9px}}
+</style>
+</head>
+<body>
+<div id="game"></div><div id="vignette"></div>
+<div class="hud">
+ <div class="topbar"><div><div class="brand">APEX<span>//</span>RACING</div><div class="sub">MOTORSPORT SIMULATOR</div></div><div class="pill" id="lap">LAP 01 / 03</div><div class="pill" id="timer">00:00.000</div></div>
+ <div class="stats"><div class="speedbox"><div class="speed" id="speed">000</div><div class="unit">KM/H</div></div><div class="smallstat"><b id="position">1<span style="font-size:12px">ST</span></b><span>POSITION</span></div><div class="smallstat"><b id="best">--:--</b><span>BEST LAP</span></div></div>
+ <div class="rightstats"><div class="gear" id="gear">1 <small>GEAR</small></div><div class="unit">NITRO BOOST</div><div class="nitro"><i id="nitro"></i></div></div>
+ <div class="controls">WASD / ARROWS&nbsp; DRIVE &nbsp; • &nbsp; SPACE&nbsp; HANDBRAKE &nbsp; • &nbsp; SHIFT&nbsp; NITRO &nbsp; • &nbsp; C&nbsp; CAMERA</div>
+ <div id="toast"></div>
+</div>
+<div id="overlay"><div class="panel"><div class="eyebrow">WELCOME TO THE GRID</div><h1>OWN THE<br><span>APEX.</span></h1><p>A fast, flowing circuit. Find your racing line, clip the apexes and save your nitro for the straights. Three laps. No excuses.</p><button id="start">START RACE&nbsp; →</button><div class="note">WASD / ARROWS to steer · SPACE to slide · SHIFT for nitro · C to change camera</div></div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const mount=document.getElementById('game');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9ab8c5);scene.fog=new THREE.FogExp2(0x9ab8c5,.0028);
+const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.1,1200);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;mount.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xd9efff,0x526044,2.0));
+const sun=new THREE.DirectionalLight(0xfff1d8,3.2);sun.position.set(-90,150,55);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-180;sun.shadow.camera.right=180;sun.shadow.camera.top=180;sun.shadow.camera.bottom=-180;scene.add(sun);
+const mat=(color,rough=.8,metal=0)=>new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});
+const grassMat=mat(0x52764b),roadMat=mat(0x30353a,.94),whiteMat=mat(0xe7e7df),redMat=mat(0xe84636),barrierMat=mat(0xb9c2c3,.6,.25);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(1200,1200),grassMat);ground.rotation.x=-Math.PI/2;ground.position.y=-.13;ground.receiveShadow=true;scene.add(ground);
+
+// A closed, gently undulating circuit made from a Catmull-Rom spline.
+const control=[[-15,0,100],[45,0,92],[100,0,58],[115,0,0],[92,0,-65],[38,0,-100],[-35,0,-94],[-100,0,-62],[-118,0,2],[-91,0,70],[-48,0,108]];
+const curve=new THREE.CatmullRomCurve3(control.map(p=>new THREE.Vector3(...p)),true,'catmullrom',.38);
+const N=700,roadWidth=15,frames=curve.computeFrenetFrames(N,true),centres=[],left=[],right=[];
+for(let i=0;i<=N;i++){const t=i/N,p=curve.getPointAt(t),normal=frames.normals[i].clone();p.y+=Math.sin(t*Math.PI*8)*.55;centres.push(p);left.push(p.clone().addScaledVector(normal,roadWidth/2));right.push(p.clone().addScaledVector(normal,-roadWidth/2));}
+function ribbon(a,b,yOffset=0){const verts=[],idx=[];for(let i=0;i<=N;i++){verts.push(a[i].x,a[i].y+yOffset,a[i].z,b[i].x,b[i].y+yOffset,b[i].z);if(i<N){let k=i*2;idx.push(k,k+1,k+2,k+1,k+3,k+2)}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setIndex(idx);g.computeVertexNormals();return g}
+const road=new THREE.Mesh(ribbon(left,right,.02),roadMat);road.receiveShadow=true;scene.add(road);
+// Kerbs in alternating red/white blocks along both edges.
+for(const side of [-1,1])for(let i=0;i<N;i+=5){const p=centres[i],n=frames.normals[i],q=p.clone().addScaledVector(n,side*(roadWidth/2+.65));const block=new THREE.Mesh(new THREE.BoxGeometry(2.25,.22,.95),((i/5|0)%2)?whiteMat:redMat);block.position.set(q.x,p.y+.15,q.z);block.rotation.y=Math.atan2(frames.tangents[i].x,frames.tangents[i].z);block.castShadow=true;scene.add(block)}
+// Trackside guard rails, posts, and tyre stacks.
+for(const side of [-1,1]){const railPts=[];for(let i=0;i<=N;i++){const q=centres[i].clone().addScaledVector(frames.normals[i],side*(roadWidth/2+2.5));q.y+=1.05;railPts.push(q)}const rail=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(railPts),900,.16,8,false),barrierMat);scene.add(rail);
+for(let i=0;i<N;i+=13){const q=centres[i].clone().addScaledVector(frames.normals[i],side*(roadWidth/2+2.5));const post=new THREE.Mesh(new THREE.BoxGeometry(.22,1.1,.22),barrierMat);post.position.set(q.x,q.y+.45,q.z);scene.add(post)}}
+// Start/finish stripe across road.
+const startPoint=curve.getPointAt(0),startTangent=curve.getTangentAt(0),startAngle=Math.atan2(startTangent.x,startTangent.z);
+const startLine=new THREE.Mesh(new THREE.PlaneGeometry(roadWidth,.9),whiteMat);startLine.rotation.x=-Math.PI/2;startLine.rotation.z=0;startLine.position.set(startPoint.x,.09,startPoint.z);startLine.rotation.y=-startAngle;scene.add(startLine);
+for(let i=0;i<12;i++){const tile=new THREE.Mesh(new THREE.BoxGeometry(roadWidth/12,.035,.9),i%2?mat(0x151719):whiteMat);tile.position.set(startPoint.x+Math.cos(startAngle)*((i-5.5)*roadWidth/12),.12,startPoint.z-Math.sin(startAngle)*((i-5.5)*roadWidth/12));tile.rotation.y=-startAngle;scene.add(tile)}
+
+// Procedural scenery: trees, distant hills and trackside lights.
+const treeTrunk=mat(0x55402c),leafMats=[mat(0x31563b),mat(0x426d45),mat(0x607d4b)];
+for(let i=0;i<180;i++){const t=Math.random(),p=curve.getPointAt(t),n=frames.normals[Math.floor(t*N)];const side=Math.random()<.5?-1:1;const pos=p.clone().addScaledVector(n,side*(20+Math.random()*75));const h=3+Math.random()*5;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.3,h*.55,7),treeTrunk);trunk.position.set(pos.x,h*.275,pos.z);scene.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.5+Math.random()*1.5,h*.72,7),leafMats[i%3]);crown.position.set(pos.x,h*.82,pos.z);crown.castShadow=true;scene.add(crown)}
+for(let i=0;i<36;i++){const t=i/36,p=curve.getPointAt(t),n=frames.normals[Math.floor(t*N)];for(const s of [-1,1]){const q=p.clone().addScaledVector(n,s*12);const pole=new THREE.Mesh(new THREE.CylinderGeometry(.08,.12,7,8),mat(0x525d62,.5,.5));pole.position.set(q.x,3.5,q.z);scene.add(pole);const lamp=new THREE.Mesh(new THREE.BoxGeometry(1.1,.18,.3),mat(0xf4f1dc,.3,.1));lamp.position.set(q.x,7,q.z);scene.add(lamp)}}
+const mountainMat=mat(0x748b88);for(let i=0;i<26;i++){const a=i/26*Math.PI*2,r=290+Math.random()*100,h=35+Math.random()*70;const hill=new THREE.Mesh(new THREE.ConeGeometry(35+Math.random()*30,h,6),mountainMat);hill.position.set(Math.cos(a)*r,h/2-4,Math.sin(a)*r);scene.add(hill)}
+
+// Detailed player car, assembled from meshes.
+function makeCar(color=0xe63c25){const root=new THREE.Group(),bodyMat=mat(color,.32,.55),dark=mat(0x111820,.45,.25),glass= new THREE.MeshPhysicalMaterial({color:0x182b39,roughness:.13,metalness:.3,clearcoat:1,transparent:true,opacity:.9}),rubber=mat(0x090b0d,.95),rim=mat(0xb9c4c9,.25,.8);
+const add=(geo,m,x,y,z)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;root.add(o);return o};
+add(new THREE.BoxGeometry(2.35,.62,4.65),bodyMat,0,.82,0);add(new THREE.BoxGeometry(2.15,.38,2.2),bodyMat,0,1.25,-.25);
+const cabin=add(new THREE.BoxGeometry(1.75,.72,1.95),glass,0,1.62,-.2);cabin.scale.set(1,1,.95);
+add(new THREE.BoxGeometry(2.1,.12,.85),bodyMat,0,1.35,1.55);add(new THREE.BoxGeometry(2.25,.12,.75),dark,0,1.1,-2.15);
+add(new THREE.BoxGeometry(2.6,.12,.28),dark,0,1.35,-2.35);for(const x of [-.82,.82])add(new THREE.BoxGeometry(.12,.65,.12),dark,x,1.65,-2.25);
+for(const x of [-.82,.82]){add(new THREE.BoxGeometry(.42,.2,.08),mat(0xfff2cf,.2),x,1.02,2.34);add(new THREE.BoxGeometry(.42,.2,.08),mat(0xff2424,.2),x,1.02,-2.34)}
+const wheels=[];for(const x of [-1.17,1.17])for(const z of [-1.48,1.48]){const w=new THREE.Group();w.position.set(x,.58,z);root.add(w);const tire=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,.34,24),rubber);tire.rotation.z=Math.PI/2;tire.castShadow=true;w.add(tire);const hub=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.36,16),rim);hub.rotation.z=Math.PI/2;w.add(hub);wheels.push({w,x,z})}
+root.userData.wheels=wheels;return root}
+const car=makeCar();scene.add(car);
+const rivals=[];for(let i=0;i<4;i++){const c=makeCar([0x167cba,0xe8b52b,0xeeeeee,0x733bc5][i]);scene.add(c);rivals.push({mesh:c,t:(.015+i*.024)%1,speed:.12+Math.random()*.025,offset:(i%2?2.6:-2.6)})}
+
+let running=false,elapsed=0,speed=0,steer=0,heading=0,trackT=0,lap=1,nitro=100,boosting=false,camMode=0,bestLap=0,lapStart=0,offroad=false;
+const keys={};addEventListener('keydown',e=>{keys[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='KeyC'&&!e.repeat){camMode=(camMode+1)%3;toast(['CHASE CAM','HOOD CAM','WIDE CAM'][camMode])}});addEventListener('keyup',e=>keys[e.code]=false);
+function toast(s){const el=document.getElementById('toast');el.textContent=s;el.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>el.style.opacity=0,1300)}
+function formatTime(s){const m=Math.floor(s/60),sec=Math.floor(s%60),ms=Math.floor(s%1*1000);return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')+'.'+String(ms).padStart(3,'0')}
+function nearestTrackT(pos){let best=1e9,bt=trackT;const center=Math.floor(trackT*N);for(let k=-65;k<=65;k++){const i=(center+k+N)%N,d=pos.distanceToSquared(centres[i]);if(d<best){best=d;bt=i/N}}return {t:bt,d:Math.sqrt(best)}}
+function placeOnTrack(t,offset=0){const p=curve.getPointAt((t%1+1)%1),idx=Math.floor(((t%1+1)%1)*N),n=frames.normals[idx];return p.addScaledVector(n,offset)}
+function update(dt){if(!running)return;elapsed+=dt;const throttle=keys.ArrowUp||keys.KeyW,brake=keys.ArrowDown||keys.KeyS,leftKey=keys.ArrowLeft||keys.KeyA,rightKey=keys.ArrowRight||keys.KeyD;boosting=(keys.ShiftLeft||keys.ShiftRight)&&nitro>0&&throttle;if(boosting)nitro=Math.max(0,nitro-26*dt);else nitro=Math.min(100,nitro+8*dt);
+const maxSpeed=boosting?83:66;speed+=(throttle?30:0)-(brake?48:0)-(throttle?0:9)*dt;speed=Math.max(0,Math.min(maxSpeed,speed));if(keys.Space)speed*=Math.max(.0,1-1.7*dt);
+const steerInput=(rightKey?1:0)-(leftKey?1:0);steer=THREE.MathUtils.damp(steer,steerInput,5,dt);const forward=curve.getTangentAt(trackT).normalize();const p=placeOnTrack(trackT);const right=new THREE.Vector3(forward.z,0,-forward.x).normalize();const carPos=car.position.clone();const near=nearestTrackT(carPos);trackT=near.t;const target=placeOnTrack(trackT);const lateral=carPos.clone().sub(target).dot(right);offroad=Math.abs(lateral)>roadWidth*.43;
+const travel=speed*(offroad?.56:1);trackT=(trackT+travel*dt/curve.getLength())%1;const desired=placeOnTrack(trackT,THREE.MathUtils.clamp(lateral+steer*speed*.014,-11,11));car.position.lerp(new THREE.Vector3(desired.x,desired.y+.12,desired.z),1-Math.exp(-7*dt));
+const tangent=curve.getTangentAt(trackT).normalize();const yaw=Math.atan2(tangent.x,tangent.z);heading=THREE.MathUtils.lerp(heading,yaw+steer*.12,1-Math.exp(-5*dt));car.rotation.set(0,heading,0);
+for(const item of car.userData.wheels){item.w.rotation.y=steer*.35;item.w.rotation.x-=speed*dt*.16}
+rivals.forEach(r=>{r.t=(r.t+r.speed*dt/curve.getLength()*60)%1;const rp=placeOnTrack(r.t,r.offset);r.mesh.position.set(rp.x,rp.y+.12,rp.z);const rt=curve.getTangentAt(r.t);r.mesh.rotation.y=Math.atan2(rt.x,rt.z)});
+const lapNow=Math.floor((elapsed-lapStart));if(trackT<.025&&elapsed>3&&lapStart>0){const duration=elapsed-lapStart;if(!bestLap||duration<bestLap){bestLap=duration;document.getElementById('best').textContent=formatTime(bestLap).slice(0,5)}lap++;lapStart=elapsed;if(lap>3){running=false;document.getElementById('overlay').style.display='grid';document.querySelector('.eyebrow').textContent='CHEQUERED FLAG';document.querySelector('h1').innerHTML='RACE<br><span>COMPLETE.</span>';document.querySelector('.panel p').textContent='You made it to the finish. Hit race again and see if you can beat your best lap.';document.getElementById('start').textContent='RACE AGAIN  →';}}
+const camBack=camMode===1?new THREE.Vector3(0,2.3,1.1):new THREE.Vector3(0,5.2,-11.5-(speed*.035));const camOffset=camBack.applyAxisAngle(new THREE.Vector3(0,1,0),heading);const desiredCam=car.position.clone().add(camOffset);if(camMode===2)desiredCam.y+=4;camera.position.lerp(desiredCam,1-Math.exp(-4.2*dt));const look=car.position.clone().add(new THREE.Vector3(0,1.1,0)).addScaledVector(tangent,camMode===1?9:8);camera.lookAt(look);
+document.getElementById('speed').textContent=String(Math.round(speed*3.6)).padStart(3,'0');document.getElementById('gear').innerHTML=Math.max(1,Math.min(6,Math.floor(speed/12)+1))+' <small>GEAR</small>';document.getElementById('nitro').style.width=nitro+'%';document.getElementById('timer').textContent=formatTime(elapsed);document.getElementById('lap').textContent='LAP '+String(Math.min(lap,3)).padStart(2,'0')+' / 03';document.getElementById('position').innerHTML='1<span style="font-size:12px">ST</span>';
+if(offroad&&speed>10)toast('OFF TRACK — FIND THE TARMAC');
+}
+document.getElementById('start').addEventListener('click',()=>{document.getElementById('overlay').style.display='none';if(!running){if(elapsed>0){elapsed=0;lap=1;bestLap=0;document.getElementById('best').textContent='--:--'}lapStart=0;running=true;toast('GO GO GO!')}});
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}addEventListener('resize',resize);
+car.position.copy(placeOnTrack(0,0));const initialT=curve.getTangentAt(0);car.rotation.y=Math.atan2(initialT.x,initialT.z);camera.position.set(car.position.x,7,car.position.z-15);camera.lookAt(car.position);
+let last=performance.now();function loop(now){const dt=Math.min((now-last)/1000,.04);last=now;update(dt);renderer.render(scene,camera);requestAnimationFrame(loop)}requestAnimationFrame(loop);
+</script>
+</body>
+</html>
